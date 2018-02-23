@@ -5,6 +5,10 @@ Instead of just providing documentation on how to buidl the whole thing,
 it would be useful to also have a working script that will build the
 whole thing.  Following was the original documentation done for Gentoo.
 
+Do note that this relies on
+`vboxtools <https://github.com/metatoaster/vboxtools>`_.  Documentation
+on how these scripts actually work (and how to make them work) to come.
+
 
 PMR2 base system build instructions for Gentoo
 ----------------------------------------------

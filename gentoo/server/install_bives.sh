@@ -1,0 +1,27 @@
+#!/bin/bash
+set -e
+
+# This assumes the "cups" USE flag is not enabled; otherwise certain
+# packages may require other explicit USE flag assignments.
+emerge --noreplace \
+    www-servers/tomcat:${TOMCAT_VERSION}
+
+# add TOMCAT_SUFFIX when it is required.
+TOMCAT_WAR_ROOT="/var/lib/tomcat-${TOMCAT_VERSION}/webapps"
+TOMCAT_WARS="
+BiVeS-WS-1.3.9.1.war
+"
+
+if [ ! -d "${TOMCAT_WAR_ROOT}" ]; then
+    /usr/share/tomcat-${TOMCAT_VERSION}/gentoo/tomcat-instance-manager.bash \
+        --create
+fi
+
+rc-update add tomcat-${TOMCAT_VERSION} default
+
+for war in ${TOMCAT_WARS}; do
+    if [ ! -f "${TOMCAT_WAR_ROOT}/${war}" ]; then
+        wget "${DIST_SERVER}/${war}" -O "${TOMCAT_WAR_ROOT}/${war}"
+        chown tomcat:tomcat "${TOMCAT_WAR_ROOT}/${war}"
+    fi
+done
