@@ -63,6 +63,9 @@ restore_pmr2_backup () {
 	    "bin/repozo -R -r \"${PMR_ZEO_BACKUP}\" -o var/filestorage/Data.fs"
 	EOF
     ssh-agent -k
+
+    # TODO use low level zopepy python code to trigger re-indexing
+    # of external resources (i.e. morre and virtuoso)
 }
 
 
@@ -104,7 +107,7 @@ SSH_CMD /etc/init.d/net.eth1 start
 
 # install PMR2
 if [ ! -z "${INSTALL_PMR2}" ]; then
-    envsubst < "${INSTALL_PMR2}" | SSH_CMD
+    envsubst \$DIST_SERVER,\$ZOPE_USER,\$PMR_HOME < "${INSTALL_PMR2}" | SSH_CMD
 fi
 
 # install Morre
