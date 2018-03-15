@@ -24,6 +24,7 @@ set -e
 # export PMR_DATA_ROOT=
 # export PMR_ZEO_BACKUP=
 # export ZOPE_USER=zope
+# export MORRE_USER=zope
 
 
 # XXX TODO upstream should implement some shell that sets this up
@@ -112,7 +113,7 @@ fi
 
 # install Morre
 if [ ! -z "${INSTALL_MORRE}" ]; then
-    envsubst \$DIST_SERVER,\$JARS_SERVER,\$MORRE_HOME,\$NEO4J_VERSION < "${INSTALL_MORRE}" | SSH_CMD
+    envsubst \$DIST_SERVER,\$JARS_SERVER,\$MORRE_USER,\$MORRE_HOME,\$NEO4J_VERSION < "${INSTALL_MORRE}" | SSH_CMD
 fi
 
 # install Bives

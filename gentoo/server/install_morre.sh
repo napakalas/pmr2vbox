@@ -34,6 +34,7 @@ jackson-databind-2.3.3.jar
 JavaEWAH-0.8.6.jar
 javax.inject-1.jar
 jaxen-1.1.1.jar
+jcl-over-slf4j-1.7.21.jar
 jCOMODI-0.5.9.jar
 jdom-1.0.jar
 jdom-1.1.3.jar
@@ -71,9 +72,12 @@ json-simple-1.1.1.jar
 jsoup-1.7.2.jar
 jsr305-2.0.1.jar
 jtidy-r938.jar
+junit-4.5.jar
 libthrift-0.9.2.jar
+log4j-1.2.17.jar
 lucene-backward-codecs-5.5.0.jar
 mail-1.4.jar
+masymos-core-0.9.0.jar
 miriam-lib-1.1.6.jar
 org.apache.commons.io-2.4.jar
 owlapi-api-4.0.2.jar
@@ -100,6 +104,8 @@ sesame-rio-trig-2.7.12.jar
 sesame-rio-trix-2.7.12.jar
 sesame-rio-turtle-2.7.12.jar
 sesame-util-2.7.12.jar
+slf4j-log4j12-1.7.21.jar
+slf4j-api-1.7.21.jar
 spi-0.2.4.jar
 stax2-api-3.1.4.jar
 staxmate-2.3.0.jar
@@ -116,70 +122,122 @@ xz-1.5.jar
 "
 
 MORRE_JARS="
-masymos-morre-0.9.0.jar
+masymos-morre-pmr2-0.9.0.jar
 "
 
 mkdir -p "${MORRE_HOME}"
-chown zope:zope "${MORRE_HOME}"
+chown ${MORRE_USER}:${MORRE_USER} "${MORRE_HOME}"
 cd "${MORRE_HOME}"
 
 if [ ! -d $NEO4J_VERSION ]; then
-    su zope -c "wget $DIST_SERVER/$NEO4J_VERSION.tar.gz"
-    su zope -c "tar xf ${NEO4J_VERSION}.tar.gz"
+    su ${MORRE_USER} -c "wget $DIST_SERVER/$NEO4J_VERSION.tar.gz"
+    su ${MORRE_USER} -c "tar xf ${NEO4J_VERSION}.tar.gz"
 fi 
 
 cd $NEO4J_VERSION
-su zope -c "mkdir -p lib/ext lib/plugins"
+su ${MORRE_USER} -c "mkdir -p lib/ext plugins"
 
 for jar in ${MORRE_DEP_JARS}; do
     if [ ! -f "lib/ext/${jar}" ]; then
-        su zope -c "wget \"${JARS_SERVER}/${jar}\" -O \"lib/ext/${jar}\""
+        su ${MORRE_USER} -c "wget \"${JARS_SERVER}/${jar}\" -O \"lib/ext/${jar}\""
     fi
 done
 
 for jar in ${MORRE_JARS}; do
-    if [ ! -f "lib/plugins/${jar}" ]; then
-        su zope -c "wget \"${JARS_SERVER}/${jar}\" -O \"lib/plugins/${jar}\""
+    if [ ! -f "plugins/${jar}" ]; then
+        su ${MORRE_USER} -c "wget \"${JARS_SERVER}/${jar}\" -O \"plugins/${jar}\""
     fi
 done
 
-su zope -c "patch -p0" << EOF
---- bin/neo4j-shared.sh 2017-01-04 15:42:46.152837739 +1300
-+++ bin/neo4j-shared.sh 2017-01-04 15:25:36.948192325 +1300
-@@ -39,7 +39,7 @@
- }
- 
- build_classpath() {
--  CLASSPATH="\${NEO4J_PLUGINS}:\${NEO4J_CONF}:\${NEO4J_LIB}/*:\${NEO4J_PLUGINS}/*"
-+  CLASSPATH="\${NEO4J_PLUGINS}:\${NEO4J_CONF}:\${NEO4J_LIB}/*:\${NEO4J_PLUGINS}/*:\${NEO4J_LIB}/ext/*"
- }
- 
- detect_os() {
---- conf/neo4j.conf 2016-05-06 11:44:36.000000000 +1200
-+++ conf/neo4j.conf 2016-06-10 11:10:20.022417151 +1200
-@@ -4,6 +4,7 @@
- 
- # The name of the database to mount
- #dbms.active_database=graph.db
-+dbms.active_database=MaSyMoS
- 
- # Paths of directories in the installation.
- #dbms.directories.data=data
-@@ -17,7 +18,7 @@
- 
- # Whether requests to Neo4j are authenticated.
- # To disable authentication, uncomment this line
--#dbms.security.auth_enabled=false
-+dbms.security.auth_enabled=false
- 
- # Enable this to be able to upgrade a store from an older version.
- #dbms.allow_format_migration=true
-@@ -119,3 +223,4 @@
- # neo4j-server-examples under /examples/unmanaged, resulting in a final URL of
- # http://localhost:7474/examples/unmanaged/helloworld/{nodeId}
- #dbms.unmanaged_extension_classes=org.neo4j.examples.server.unmanaged=/examples/unmanaged
-+dbms.unmanaged_extension_classes=de.unirostock.morre.server.plugin=/morre
+if ! grep MaSyMoS conf/neo4j.conf > /dev/null ; then
+    su ${MORRE_USER} -c "patch -p0" <<- EOF
+	--- bin/neo4j-shared.sh 2017-01-04 15:42:46.152837739 +1300
+	+++ bin/neo4j-shared.sh 2017-01-04 15:25:36.948192325 +1300
+	@@ -39,7 +39,7 @@
+	 }
+	 
+	 build_classpath() {
+	-  CLASSPATH="\${NEO4J_PLUGINS}:\${NEO4J_CONF}:\${NEO4J_LIB}/*:\${NEO4J_PLUGINS}/*"
+	+  CLASSPATH="\${NEO4J_PLUGINS}:\${NEO4J_CONF}:\${NEO4J_LIB}/*:\${NEO4J_PLUGINS}/*:\${NEO4J_LIB}/ext/*"
+	 }
+	 
+	 detect_os() {
+	--- conf/neo4j.conf 2016-05-06 11:44:36.000000000 +1200
+	+++ conf/neo4j.conf 2016-06-10 11:10:20.022417151 +1200
+	@@ -4,6 +4,7 @@
+	 
+	 # The name of the database to mount
+	 #dbms.active_database=graph.db
+	+dbms.active_database=MaSyMoS
+	 
+	 # Paths of directories in the installation.
+	 #dbms.directories.data=data
+	@@ -17,7 +18,7 @@
+	 
+	 # Whether requests to Neo4j are authenticated.
+	 # To disable authentication, uncomment this line
+	-#dbms.security.auth_enabled=false
+	+dbms.security.auth_enabled=false
+	 
+	 # Enable this to be able to upgrade a store from an older version.
+	 #dbms.allow_format_migration=true
+	@@ -119,3 +223,4 @@
+	 # neo4j-server-examples under /examples/unmanaged, resulting in a final URL of
+	 # http://localhost:7474/examples/unmanaged/helloworld/{nodeId}
+	 #dbms.unmanaged_extension_classes=org.neo4j.examples.server.unmanaged=/examples/unmanaged
+	+dbms.unmanaged_extension_classes=de.unirostock.morre.server.plugin=/morre
+	EOF
+fi
+
+cat << EOF > /etc/init.d/morre.pmr2
+#!/sbin/openrc-run
+# Distributed under the terms of the GNU General Public License v2
+
+NEO4J_HOME=${MORRE_HOME}/${NEO4J_VERSION}
+DAEMONUSER=${MORRE_USER}
+DAEMONGROUP=${MORRE_USER}
+
+SCRIPT=\${NEO4J_HOME}/bin/neo4j
+PIDFILE=\${NEO4J_HOME}/run/neo4j.pid
+
+[ -f \$SCRIPT ] || eend 1
+
+DAEMON=\$SCRIPT
+
+depend() {
+    need net
+}
+
+start() {
+    ebegin "Starting \${SVCNAME}"
+    start-stop-daemon --quiet --oknodo \\
+                      --chuid \$DAEMONUSER:\$DAEMONGROUP \\
+                      --pidfile \${PIDFILE} \\
+                      --exec \${DAEMON} --start -- start
+    retval=\$?
+    eend \${retval}
+}
+
+stop() {
+    ebegin "Stopping \${SVCNAME}"
+    start-stop-daemon --quiet --oknodo \\
+                      --chuid \$DAEMONUSER:\$DAEMONGROUP \\
+                      --pidfile \${PIDFILE} \\
+                      --exec \${DAEMON} --stop -- stop
+    retval=\$?
+    eend \${retval}
+}
+
+restart() {
+    ebegin "Restarting \${SVCNAME}"
+    start-stop-daemon --quiet --oknodo \\
+                      --chuid \$DAEMONUSER:\$DAEMONGROUP \\
+                      --pidfile \${PIDFILE} \\
+                      --exec \${DAEMON} --restart -- restart
+    retval=\$?
+    eend \${retval}
+}
 EOF
 
-
-# TODO set up init scripts
+chmod +x /etc/init.d/morre.pmr2
+rc-update add morre.pmr2 default
