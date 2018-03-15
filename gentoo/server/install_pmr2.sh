@@ -200,6 +200,4 @@ if [ ! -f /var/lib/virtuoso/db/virtuoso.db ]; then
 	EOF
 fi
 
-# TODO set passwords for virtuoso accounts
-
 # TODO set up apache

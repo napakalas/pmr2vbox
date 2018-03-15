@@ -65,8 +65,10 @@ restore_pmr2_backup () {
 	EOF
     ssh-agent -k
 
+    POSTINSTALL_REINDEX="server/postinstall_reindex.sh"
     # TODO use low level zopepy python code to trigger re-indexing
     # of external resources (i.e. morre and virtuoso)
+    envsubst \$ZOPE_USER,\$PMR_HOME < "${POSTINSTALL_REINDEX}" | SSH_CMD
 }
 
 
