@@ -27,6 +27,7 @@ emerge --sync pmr2-overlay
 emerge --noreplace net-misc/omniORB dev-util/cmake dev-db/unixODBC \
     dev-python/cffi media-libs/openjpeg media-libs/libjpeg-turbo \
     dev-python/virtualenv \
+    www-servers/apache \
     dev-db/virtuoso-odbc::pmr2-overlay \
     dev-db/virtuoso-server::pmr2-overlay \
     dev-db/virtuoso-vad-conductor::pmr2-overlay
