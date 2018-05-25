@@ -9,6 +9,9 @@ Do note that this relies on
 `vboxtools <https://github.com/metatoaster/vboxtools>`_.  Documentation
 on how these scripts actually work (and how to make them work) to come.
 
+The remaining of this document provides a rough outline what happens
+when ``gentoo/script.sh`` is executed for the PMR2 portion.
+
 
 PMR2 base system build instructions for Gentoo
 ----------------------------------------------
