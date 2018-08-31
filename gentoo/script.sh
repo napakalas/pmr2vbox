@@ -123,7 +123,7 @@ if [ ! -z "${INSTALL_BIVES}" ]; then
     envsubst \$DIST_SERVER,\$TOMCAT_VERSION,\$TOMCAT_USER < "${INSTALL_BIVES}" | SSH_CMD
 fi
 
-# install Bives
+# restore backup
 if [ ! -z "${RESTORE_BACKUP}" ]; then
     restore_pmr2_backup
 fi

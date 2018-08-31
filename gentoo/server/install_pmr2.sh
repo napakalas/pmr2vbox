@@ -27,7 +27,6 @@ emerge --sync pmr2-overlay
 emerge --noreplace net-misc/omniORB dev-util/cmake dev-db/unixODBC \
     dev-python/cffi media-libs/openjpeg media-libs/libjpeg-turbo \
     dev-python/virtualenv \
-    www-servers/apache \
     dev-db/virtuoso-odbc::pmr2-overlay \
     dev-db/virtuoso-server::pmr2-overlay \
     dev-db/virtuoso-vad-conductor::pmr2-overlay
@@ -131,7 +130,15 @@ fi
 
 cd pmr2.buildout
 # TODO git checkout ${PMR_RELEASE_BRANCH}
-su ${ZOPE_USER} -c "python bootstrap.py"
+
+# original bootstrap zc.buildout
+# su ${ZOPE_USER} -c "bin/python bootstrap.py"
+
+# virtualenv zc.buildout
+su ${ZOPE_USER} -c "virtualenv ."
+# TODO extract setuptools version from the buildout config that has it
+su ${ZOPE_USER} -c "bin/pip install -U zc.buildout==1.7.1 setuptools==20.1.1"
+
 # TODO figure out how to specify options/customize a base set of options
 # su ${ZOPE_USER} -c "bin/buildout -c buildout-git.cfg"
 su ${ZOPE_USER} -c "bin/buildout -c deploy-all.cfg"
@@ -200,5 +207,3 @@ if [ ! -f /var/lib/virtuoso/db/virtuoso.db ]; then
 	rdfs_rule_set('ricordo_rule', 'http://namespaces.physiomeproject.org/ricordo-sbml-schema.rdf');
 	EOF
 fi
-
-# TODO set up apache
