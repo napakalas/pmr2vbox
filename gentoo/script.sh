@@ -26,6 +26,8 @@ set -e
 # export ZOPE_USER=zope
 # export MORRE_USER=zope
 
+# export HOST_FQDN="pmr.example.com"
+
 
 # XXX TODO upstream should implement some shell that sets this up
 alias SSH_CMD="ssh -oStrictHostKeyChecking=no -oBatchMode=Yes -i \"${VBOX_PRIVKEY}\" root@${VBOX_IP}"
@@ -99,6 +101,10 @@ while [[ $# > 0 ]]; do
             RESTORE_BACKUP=1
             shift
             ;;
+        --production)
+            SETUP_PRODUCTION=server/install_production_services.sh
+            shift
+            ;;
         *)
             die "unknown option '${opt}'"
             ;;
@@ -126,6 +132,11 @@ fi
 # restore backup
 if [ ! -z "${RESTORE_BACKUP}" ]; then
     restore_pmr2_backup
+fi
+
+# setup for production
+if [ ! -z "${SETUP_PRODUCTION}" ]; then
+    envsubst \$HOST_FQDN,\$PMR_HOME < "${SETUP_PRODUCTION}" | SSH_CMD
 fi
 
 
