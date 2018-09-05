@@ -1,0 +1,10 @@
+#!/bin/sh
+set -e
+
+# produce a more real looking message through an actual JSON library
+# such that malformed JSON input will explode.
+msg=$(echo $3 | cut -f2 -d\= | python -c "import json, sys;print('USERBUCKET\\t{d[DiskContainer][UserBucket][S3Bucket]}\\t{d[DiskContainer][UserBucket][S3Key]}'.format(d=json.load(sys.stdin)))")
+
+echo -e 'import-snap-0123456789abcdef0'
+echo -e 'SNAPSHOTTASKDETAIL\t0.0\tVHD\t3\tactive\tpending'
+echo -e "$msg"

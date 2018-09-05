@@ -1,0 +1,9 @@
+#!/bin/sh
+set -e
+
+task_id=$5
+
+echo -e "IMPORTSNAPSHOTTASKS\t${task_id}"
+echo -e 'SNAPSHOTTASKDETAIL\t0.0\tVHD\t2\tactive\tpending'
+echo -e "USERBUCKET\ttest-bucket\tkey.vhd"
+

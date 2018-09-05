@@ -1,0 +1,25 @@
+#!/bin/bash
+set -e
+
+# include related libraries
+DIR=$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )
+BASENAME=$(basename ${BASH_SOURCE[0]})
+
+source $DIR/../lib/aws
+
+UPLOAD_IMG="$1"
+S3_BUCKET="$2"
+S3_KEY="$3"
+
+if [ -z "${UPLOAD_IMG}" ] || [ -z "${S3_BUCKET}" ]; then
+    warn "usage: ${BASENAME} UPLOAD_IMG S3_BUCKET [S3_KEY]"
+    warn ""
+    warn "attempt to upload the specified .vhd image with aws to the s3 bucket"
+    exit 2
+fi
+
+s3_region "${S3_BUCKET}"
+upload_s3 "${UPLOAD_IMG}"
+s3_to_ec2_snapshot
+monitor_import
+ec2_snapshot_to_ami

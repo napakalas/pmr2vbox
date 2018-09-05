@@ -1,0 +1,92 @@
+#!/bin/bash
+set -e
+
+# this may redefine the same existing vboxtools/utils version in the
+# exact same way
+warn () {
+    echo $@ >&2
+}
+
+# TODO define permission policies
+
+s3_region () {
+    AWS_DEFAULT_REGION=$(aws s3api get-bucket-location --bucket "${S3_BUCKET}")
+    warn "S3_BUCKET '${S3_BUCKET}' is at region '${AWS_DEFAULT_REGION}'"
+}
+
+upload_s3 () {
+    src="$1"
+    S3_KEY=${S3_KEY:-$(
+        echo ${UPLOAD_IMG} | sed -r "s/(\.[^\.]*)$/-$(date -u +%Y%m%d)\1/")}
+    # this one can just be played out normally
+    # TODO check if S3_KEY exists, and skip the step if it is
+    warn "uploading as '${S3_KEY}'"
+    aws s3 cp "${src}" "s3://${S3_BUCKET}/${S3_KEY}"
+}
+
+# 2. S3 conversion to AWS Snapshot
+
+s3_to_ec2_snapshot () {
+   # TODO check that ${IMPORT_SNAPSHOT_TASK} is set and skip
+   s3_task_output=$(aws ec2 import-snapshot --cli-input-json='{
+    "DiskContainer": {
+        "Description": "'"${S3_KEY}"'",
+        "Format": "vhd",
+        "UserBucket": {
+            "S3Bucket": "'"${S3_BUCKET}"'",
+            "S3Key": "'"${S3_KEY}"'"
+        }
+    }
+}')
+    export IMPORT_SNAPSHOT_TASK=$(echo "${s3_task_output}" | head -n1)
+    warn "starting import snapshot task '${IMPORT_SNAPSHOT_TASK}'"
+}
+
+monitor_import () {
+    if [ -z "${IMPORT_SNAPSHOT_TASK}" ]; then
+        # TODO warning message
+        return 2
+    fi
+
+    check_count=200
+    interval=4
+
+    for ((i=0; i <= $check_count; i++)) do
+        output=$(aws ec2 describe-import-snapshot-tasks \
+            --import-task-ids "${IMPORT_SNAPSHOT_TASK}")
+        details=$(echo -e "${output}" | grep SNAPSHOTTASKDETAIL)
+        state=$(echo -e "${details}" | rev | cut -f1 | rev)
+        if [ "${state}" = "completed" ]; then
+            EC2_SNAPSHOT=$(echo -e "${details}" | cut -f4)
+            warn "snapshot '${EC2_SNAPSHOT}' imported"
+            return 0
+        fi
+        progress=$(echo -e "${details}" | cut -f4)
+        # FIXME clear the entire line
+        warn -ne "${IMPORT_SNAPSHOT_TASK}: ${progress}%\t${state}\r"
+        sleep $interval
+    done
+
+    warn 'aborting due to time limit'
+    return 1
+}
+
+ec2_snapshot_to_ami () {
+    # TODO assign this to something to be used?
+    aws ec2 register-image --name "${S3_KEY}" --cli-input-json='{
+    "Architecture": "x86_64",
+    "BlockDeviceMappings": [
+        {
+            "DeviceName": "/dev/sda1",
+            "Ebs": {
+                "SnapshotId": "'${EC2_SNAPSHOT}'",
+                "VolumeSize": 10,
+                "VolumeType": "gp2"
+            }
+        }
+    ],
+    "Name": "'${S3_KEY}'",
+    "RootDeviceName": "/dev/sda1",
+    "VirtualizationType": "hvm"
+}'
+}
