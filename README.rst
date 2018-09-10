@@ -8,6 +8,10 @@ whole thing.  Following was the original documentation done for Gentoo.
 Do note that this relies on
 `vboxtools <https://github.com/metatoaster/vboxtools>`_.  Documentation
 on how these scripts actually work (and how to make them work) to come.
+In brief, follow the instructions on creating a base Gentoo system, and
+then call ``activatevm`` to spawn a new bash session.  Before executing
+``gentoo/script.sh``, ensure that all relevant variables are filled with
+a defined value.
 
 The remaining of this document provides a rough outline what happens
 when ``gentoo/script.sh`` is executed for the PMR2 portion.

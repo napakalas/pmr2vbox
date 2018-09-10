@@ -13,7 +13,6 @@ ZOPE_INSTANCE_PORT=${ZOPE_INSTANCE_PORT:-8280}
 # Postfix setup
 
 # TODO surgically add these configuration settings
-
 cat << EOF >> /etc/postfix/main.cf
 myhostname = ${HOST_FQDN}
 mydomain = ${HOST_FQDN}
@@ -22,10 +21,13 @@ mydestination = \$myhostname, localhost.\$mydomain, localhost, \$mydomain,
 mynetworks_style = host
 EOF
 
+rc-update add postfix default
+
+# Apache setup.
 
 sed -i 's/^APACHE2_OPTS.*/APACHE2_OPTS="-D DEFAULT_VHOST -D INFO -D SSL -D SSL_DEFAULT_VHOST -D LANGUAGE -D PROXY"/' /etc/conf.d/apache2
 
-# Apache setup.
+mkdir -p /var/log/apache2
 
 cat << EOF > /etc/apache2/vhosts.d/pmr.conf
 <VirtualHost *:80>
@@ -102,6 +104,8 @@ cat << EOF > /etc/apache2/vhosts.d/pmr.conf
 #     RewriteRule "^/(.*)" "http://127.0.0.1:${ZOPE_INSTANCE_PORT}/VirtualHostBase/https/${HOST_FQDN}:443/pmr/VirtualHostRoot/\$1" [P]
 # </VirtualHost>
 EOF
+
+rc-update add apache2 default
 
 # Cronjob for certbot
 
