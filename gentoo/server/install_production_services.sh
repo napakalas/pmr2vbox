@@ -6,10 +6,6 @@ emerge --noreplace \
     www-servers/apache \
     app-crypt/certbot
 
-# TODO derive from zope instance home somehow?
-# fine for now, since value in buildout.cfg is more or less static
-ZOPE_INSTANCE_PORT=${ZOPE_INSTANCE_PORT:-8280}
-
 # Postfix setup
 
 # TODO surgically add these configuration settings
@@ -29,12 +25,12 @@ sed -i 's/^APACHE2_OPTS.*/APACHE2_OPTS="-D DEFAULT_VHOST -D INFO -D SSL -D SSL_D
 
 mkdir -p /var/log/apache2
 
-cat << EOF > /etc/apache2/vhosts.d/pmr.conf
+cat << EOF > /etc/apache2/vhosts.d/90_${BUILDOUT_NAME}.conf
 <VirtualHost *:80>
     ServerAdmin webmaster@localhost
     ServerName ${HOST_FQDN}
 
-    DocumentRoot ${PMR_HOME}/pmr2.buildout/var/www
+    DocumentRoot ${BUILDOUT_ROOT}/var/www
 
     <Directory />
         Options Indexes FollowSymLinks MultiViews
@@ -65,7 +61,7 @@ cat << EOF > /etc/apache2/vhosts.d/pmr.conf
 
     RewriteEngine On
     RewriteCond %{REQUEST_URI} !^/\\.well\\-known/acme\\-challenge/
-    RewriteRule "^/(.*)" "http://127.0.0.1:${ZOPE_INSTANCE_PORT}/VirtualHostBase/http/${HOST_FQDN}:80/pmr/VirtualHostRoot/\$1" [P]
+    RewriteRule "^/(.*)" "http://127.0.0.1:${ZOPE_INSTANCE_PORT}/VirtualHostBase/http/${HOST_FQDN}:80/${SITE_ROOT}/VirtualHostRoot/\$1" [P]
 </VirtualHost>
 
 # Uncomment when certbot has been set up to get letsencrypt certificates
@@ -74,7 +70,7 @@ cat << EOF > /etc/apache2/vhosts.d/pmr.conf
 #     ServerAdmin webmaster@localhost
 #     ServerName ${HOST_FQDN}
 # 
-#     DocumentRoot ${PMR_HOME}/pmr2.buildout/var/www
+#     DocumentRoot ${BUILDOUT_ROOT}/var/www
 # 
 #     <Directory />
 #         Options Indexes FollowSymLinks MultiViews
@@ -101,7 +97,7 @@ cat << EOF > /etc/apache2/vhosts.d/pmr.conf
 # 
 #     RewriteEngine On
 #     RewriteCond %{REQUEST_URI} !^/\\.well\\-known/acme\\-challenge/
-#     RewriteRule "^/(.*)" "http://127.0.0.1:${ZOPE_INSTANCE_PORT}/VirtualHostBase/https/${HOST_FQDN}:443/pmr/VirtualHostRoot/\$1" [P]
+#     RewriteRule "^/(.*)" "http://127.0.0.1:${ZOPE_INSTANCE_PORT}/VirtualHostBase/https/${HOST_FQDN}:443/${SITE_ROOT}/VirtualHostRoot/\$1" [P]
 # </VirtualHost>
 EOF
 

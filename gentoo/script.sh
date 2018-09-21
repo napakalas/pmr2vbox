@@ -4,10 +4,12 @@
 
 set -e
 # XXX these MUST be read from some configuration file
+# BACKUP_* flags are origin restoration endpoints
 # export BACKUP_HOST=
 # export BACKUP_USER=
 # export BACKUP_DATA_PATH=
 # export BACKUP_ZEO_PATH=
+
 # export DIST_SERVER=
 # export JARS_SERVER=
 # export NEO4J_VERSION=neo4j-community-3.0.1
@@ -27,10 +29,15 @@ set -e
 # export MORRE_USER=zope
 
 # export HOST_FQDN="pmr.example.com"
+# export BUILDOUT_NAME="pmr2.buildout"
+# export SITE_ROOT=plone
+# export ZOPE_INSTANCE_PORT=8280
 
 
 # XXX TODO upstream should implement some shell that sets this up
 alias SSH_CMD="ssh -oStrictHostKeyChecking=no -oBatchMode=Yes -i \"${VBOX_PRIVKEY}\" root@${VBOX_IP}"
+
+export BUILDOUT_ROOT="${PMR_HOME}/${BUILDOUT_NAME}"
 
 
 restore_pmr2_backup () {
@@ -59,17 +66,18 @@ restore_pmr2_backup () {
     ssh-add -d "${PMR_ZEO_KEY}"
 
     SSH_CMD <<- EOF
+	/etc/init.d/pmr2.instance stop
+	/etc/init.d/pmr2.zeoserver stop
 	chown -R ${ZOPE_USER}:${ZOPE_USER} $PMR_DATA_ROOT
 	chown -R ${ZOPE_USER}:${ZOPE_USER} $PMR_ZEO_BACKUP
-	cd "${PMR_HOME}/pmr2.buildout"
+	cd "${BUILDOUT_ROOT}"
 	su ${ZOPE_USER} -c \
 	    "bin/repozo -R -r \"${PMR_ZEO_BACKUP}\" -o var/filestorage/Data.fs"
 	EOF
     ssh-agent -k
 
     POSTINSTALL_REINDEX="server/postinstall_reindex.sh"
-    # TODO use low level zopepy python code to trigger re-indexing
-    # of external resources (i.e. morre and virtuoso)
+
     envsubst \$ZOPE_USER,\$PMR_HOME < "${POSTINSTALL_REINDEX}" | SSH_CMD
 }
 
@@ -79,6 +87,7 @@ if [ $# = 0 ]; then
     INSTALL_PMR2=server/install_pmr2.sh
     INSTALL_MORRE=server/install_morre.sh
     INSTALL_BIVES=server/install_bives.sh
+    SETUP_PRODUCTION=server/install_production_services.sh
     RESTORE_BACKUP=1
 fi
 
@@ -97,12 +106,12 @@ while [[ $# > 0 ]]; do
             INSTALL_BIVES=server/install_bives.sh
             shift
             ;;
-        --restore-backup)
-            RESTORE_BACKUP=1
+        --install-production)
+            SETUP_PRODUCTION=server/install_production_services.sh
             shift
             ;;
-        --production)
-            SETUP_PRODUCTION=server/install_production_services.sh
+        --restore-backup)
+            RESTORE_BACKUP=1
             shift
             ;;
         *)
@@ -129,14 +138,18 @@ if [ ! -z "${INSTALL_BIVES}" ]; then
     envsubst \$DIST_SERVER,\$TOMCAT_VERSION,\$TOMCAT_USER < "${INSTALL_BIVES}" | SSH_CMD
 fi
 
-# restore backup
-if [ ! -z "${RESTORE_BACKUP}" ]; then
-    restore_pmr2_backup
+# install and setup for production
+if [ ! -z "${SETUP_PRODUCTION}" ]; then
+    envsubst \${BUILDOUT_NAME},\$HOST_FQDN,\$BUILDOUT_ROOT,\$ZOPE_INSTANCE_PORT,\$SITE_ROOT < "${SETUP_PRODUCTION}" | SSH_CMD
 fi
 
-# setup for production
-if [ ! -z "${SETUP_PRODUCTION}" ]; then
-    envsubst \$HOST_FQDN,\$PMR_HOME < "${SETUP_PRODUCTION}" | SSH_CMD
+# restore backup
+if [ ! -z "${RESTORE_BACKUP}" ]; then
+    if [ -z "${PMR_DATA_KEY}" ] || [ -z "${PMR_ZEO_KEY}" ]; then
+        echo "skipping backup restore; PMR_DATA_KEY or PMR_ZEO_KEY undefined"
+    else
+        restore_pmr2_backup
+    fi
 fi
 
 

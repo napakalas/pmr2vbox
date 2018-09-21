@@ -35,6 +35,11 @@ out, err = p.communicate(cmd.encode('utf8'))
 # string based workaround because sys.exit does not work within debug shell
 if 'Done' in out:
     print('OKAY')
+
+# to ensure the above if statement also get executed because zopepy can
+# be buggy with trailing if/indented statements?
+print('')
+
 EOF
 echo "done"
 
