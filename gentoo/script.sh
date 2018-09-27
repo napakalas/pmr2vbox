@@ -4,35 +4,36 @@
 
 set -e
 # XXX these MUST be read from some configuration file
+
 # BACKUP_* flags are origin restoration endpoints
 # export BACKUP_HOST=
 # export BACKUP_USER=
 # export BACKUP_DATA_PATH=
-# export BACKUP_ZEO_PATH=
-
-# export DIST_SERVER=
+#
+# export DIST_SERVER=https://dist.physiomeproject.org/
 # export JARS_SERVER=
 # export NEO4J_VERSION=neo4j-community-3.0.1
 # export TOMCAT_VERSION=8.5
-# # TODO figure out usage of TOMCAT_SUFFIX and whether it is applicable
-# # without complicating things.
+# TODO figure out usage of TOMCAT_SUFFIX and whether it is applicable
+# without complicating things.
 # export TOMCAT_USER=tomcat
-# # XXX PMR_HOME should be configured
-# # XXX should also apply a step to attach a separate drive
+# XXX PMR_HOME should be configured
+# XXX should also apply a step to attach a separate drive
 # export PMR_HOME=
 # export MORRE_HOME=
-# export PMR_DATA_KEY=
-# export PMR_ZEO_KEY=
-# export PMR_DATA_ROOT=
-# export PMR_ZEO_BACKUP=
+
 # export ZOPE_USER=zope
 # export MORRE_USER=zope
-
-# export HOST_FQDN="pmr.example.com"
 # export BUILDOUT_NAME="pmr2.buildout"
-# export SITE_ROOT=plone
-# export ZOPE_INSTANCE_PORT=8280
 
+# export SITE_ROOT=plone
+# export HOST_FQDN="pmr.example.com"
+
+# export PMR_DATA_READ_KEY=
+# export PMR_DATA_ROOT=
+# export PMR_ZEO_BACKUP=
+
+export ZOPE_INSTANCE_PORT=8280
 
 # XXX TODO upstream should implement some shell that sets this up
 alias SSH_CMD="ssh -oStrictHostKeyChecking=no -oBatchMode=Yes -i \"${VBOX_PRIVKEY}\" root@${VBOX_IP}"
@@ -41,35 +42,28 @@ export BUILDOUT_ROOT="${PMR_HOME}/${BUILDOUT_NAME}"
 
 
 restore_pmr2_backup () {
-    # XXX consider `exec ssh-agent $SCRIPT` to ensure ssh-agent dies
     eval "$(ssh-agent -s)"
+
     # restore from backup
-    # XXX figure out how to better add the keyscan results.
     SSH_CMD <<- EOF
 	mkdir -p "${PMR_DATA_ROOT}"
-	mkdir -p "${PMR_ZEO_BACKUP}"
 	ssh-keyscan "${BACKUP_HOST}" >> ~/.ssh/known_hosts 2>/dev/null
 	EOF
 
-    ssh-add "${PMR_DATA_KEY}"
+    ssh-add "${PMR_DATA_READ_KEY}"
     SSH_CMD -A <<- EOF
-	rsync -av ${BACKUP_USER}@${BACKUP_HOST}:"${BACKUP_DATA_PATH}" \
-	    "${PMR_DATA_ROOT}"
+	rsync -av ${BACKUP_USER}@${BACKUP_HOST}: "${PMR_DATA_ROOT}"
 	EOF
-    ssh-add -d "${PMR_DATA_KEY}"
+    ssh-add -d "${PMR_DATA_READ_KEY}"
 
-    ssh-add "${PMR_ZEO_KEY}"
-    SSH_CMD -A <<- EOF
-	rsync -av ${BACKUP_USER}@${BACKUP_HOST}:"${BACKUP_ZEO_PATH}" \
-	    "${PMR_ZEO_BACKUP}"
-	EOF
-    ssh-add -d "${PMR_ZEO_KEY}"
+    # the zeo backup is kept as a backup subdir in the full data backup;
+    # move that back up one level to keep separated from dvcs repos.
 
     SSH_CMD <<- EOF
 	/etc/init.d/pmr2.instance stop
 	/etc/init.d/pmr2.zeoserver stop
 	chown -R ${ZOPE_USER}:${ZOPE_USER} $PMR_DATA_ROOT
-	chown -R ${ZOPE_USER}:${ZOPE_USER} $PMR_ZEO_BACKUP
+	mv ${PMR_DATA_ROOT}/backup ${PMR_ZEO_BACKUP}
 	cd "${BUILDOUT_ROOT}"
 	su ${ZOPE_USER} -c \
 	    "bin/repozo -R -r \"${PMR_ZEO_BACKUP}\" -o var/filestorage/Data.fs"
@@ -145,8 +139,8 @@ fi
 
 # restore backup
 if [ ! -z "${RESTORE_BACKUP}" ]; then
-    if [ -z "${PMR_DATA_KEY}" ] || [ -z "${PMR_ZEO_KEY}" ]; then
-        echo "skipping backup restore; PMR_DATA_KEY or PMR_ZEO_KEY undefined"
+    if [ -z "${PMR_DATA_READ_KEY}" ]; then
+        echo "skipping backup restore; PMR_DATA_READ_KEY undefined"
     else
         restore_pmr2_backup
     fi

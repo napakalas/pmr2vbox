@@ -1,6 +1,6 @@
 #!/bin/sh
-# XXX this script assumes vboxtools libraries are available; this can be
-# achieved using the vboxtools activatevm command.
+# XXX this script assumes vboxtools has been used to "activate" a
+# VirtualBox control environment.
 
 set -e
 # XXX these MUST be read from some configuration file
