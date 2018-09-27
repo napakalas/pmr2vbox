@@ -21,7 +21,15 @@ upload_s3 () {
     # this one can just be played out normally
     # TODO check if S3_KEY exists, and skip the step if it is
     warn "uploading as '${S3_KEY}'"
-    aws s3 cp "${src}" "s3://${S3_BUCKET}/${S3_KEY}"
+    ret=0
+    aws s3api head-object \
+        --bucket "${S3_BUCKET}" \
+        --key "${S3_KEY}" 2&> /dev/null || ret=$?
+    if [ $ret = 0 ]; then
+        warn "s3://${S3_BUCKET}/${S3_KEY} already uploaded"
+    else
+        aws s3 cp "${src}" "s3://${S3_BUCKET}/${S3_KEY}"
+    fi
 }
 
 # 2. S3 conversion to AWS Snapshot
@@ -48,7 +56,7 @@ monitor_import () {
         return 2
     fi
 
-    check_count=200
+    check_count=450
     interval=4
 
     for ((i=0; i <= $check_count; i++)) do
@@ -58,22 +66,23 @@ monitor_import () {
         state=$(echo -e "${details}" | rev | cut -f1 | rev)
         if [ "${state}" = "completed" ]; then
             EC2_SNAPSHOT=$(echo -e "${details}" | cut -f4)
-            warn "snapshot '${EC2_SNAPSHOT}' imported"
+            warn -e "\x1b[Ksnapshot '${EC2_SNAPSHOT}' imported"
             return 0
         fi
         progress=$(echo -e "${details}" | cut -f4)
-        # FIXME clear the entire line
-        warn -ne "${IMPORT_SNAPSHOT_TASK}: ${progress}%\t${state}\r"
+        warn -ne "\x1b[K${IMPORT_SNAPSHOT_TASK}: ${progress}%\t${state}\r"
         sleep $interval
     done
 
-    warn 'aborting due to time limit'
+    warn -e "\x1b[Kaborting due to time limit"
     return 1
 }
 
 ec2_snapshot_to_ami () {
     # TODO assign this to something to be used?
-    aws ec2 register-image --name "${S3_KEY}" --cli-input-json='{
+    # TODO link to subsequent /opt/zope snapshots?
+    export AMI_ID=$(aws ec2 register-image --name "${S3_KEY}" --ena-support \
+    --cli-input-json='{
     "Architecture": "x86_64",
     "BlockDeviceMappings": [
         {
@@ -88,5 +97,6 @@ ec2_snapshot_to_ami () {
     "Name": "'${S3_KEY}'",
     "RootDeviceName": "/dev/sda1",
     "VirtualizationType": "hvm"
-}'
+}')
+    warn "AMI '${AMI_ID}' created"
 }
