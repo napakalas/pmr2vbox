@@ -3,35 +3,37 @@
 # VirtualBox control environment.
 
 set -e
+DIR=$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )
+
 # XXX these MUST be read from some configuration file
 
+# TODO should also apply optional step to attach a separate disk image
+
 # BACKUP_* flags are origin restoration endpoints
-# export BACKUP_HOST=
-# export BACKUP_USER=
-# export BACKUP_DATA_PATH=
-#
-# export DIST_SERVER=https://dist.physiomeproject.org/
-# export JARS_SERVER=
-# export NEO4J_VERSION=neo4j-community-3.0.1
-# export TOMCAT_VERSION=8.5
+export BACKUP_HOST=dist.physiomeproject.org
+export BACKUP_USER=pmrdemo
+
+export DIST_SERVER=https://"${BACKUP_HOST}"
+export JARS_SERVER="${DIST_SERVER}"/jars
+export NEO4J_VERSION=neo4j-community-3.0.1
+export TOMCAT_VERSION=8.5
+
 # TODO figure out usage of TOMCAT_SUFFIX and whether it is applicable
 # without complicating things.
-# export TOMCAT_USER=tomcat
-# XXX PMR_HOME should be configured
-# XXX should also apply a step to attach a separate drive
-# export PMR_HOME=
-# export MORRE_HOME=
+export TOMCAT_USER=tomcat
 
-# export ZOPE_USER=zope
-# export MORRE_USER=zope
-# export BUILDOUT_NAME="pmr2.buildout"
+export ZOPE_USER=zope
+export MORRE_USER="${ZOPE_USER}"
+export PMR_HOME=/home/"${ZOPE_USER}"
+export MORRE_HOME=/home/"${MORRE_USER}"
+export BUILDOUT_NAME="pmr2.buildout"
 
-# export SITE_ROOT=plone
-# export HOST_FQDN="pmr.example.com"
+export SITE_ROOT=pmr
+export HOST_FQDN="pmr.example.com"
 
-# export PMR_DATA_READ_KEY=
-# export PMR_DATA_ROOT=
-# export PMR_ZEO_BACKUP=
+export PMR_DATA_READ_KEY="${DIR}/pmrdemo_key"
+export PMR_DATA_ROOT="${PMR_HOME}/pmr2"
+export PMR_ZEO_BACKUP="${PMR_HOME}/backup"
 
 export ZOPE_INSTANCE_PORT=8280
 
@@ -42,19 +44,25 @@ export BUILDOUT_ROOT="${PMR_HOME}/${BUILDOUT_NAME}"
 
 
 restore_pmr2_backup () {
-    eval "$(ssh-agent -s)"
-
     # restore from backup
     SSH_CMD <<- EOF
 	mkdir -p "${PMR_DATA_ROOT}"
 	ssh-keyscan "${BACKUP_HOST}" >> ~/.ssh/known_hosts 2>/dev/null
 	EOF
 
+    # using a standalone ssh agent to forward the keypair into the
+    # target machine without copying any actual secrets onto its
+    # filesystem.
+    eval "$(ssh-agent -s)"
+
     ssh-add "${PMR_DATA_READ_KEY}"
     SSH_CMD -A <<- EOF
 	rsync -av ${BACKUP_USER}@${BACKUP_HOST}: "${PMR_DATA_ROOT}"
 	EOF
     ssh-add -d "${PMR_DATA_READ_KEY}"
+
+    # terminate the standalone ssh agent.
+    ssh-agent -k
 
     # the zeo backup is kept as a backup subdir in the full data backup;
     # move that back up one level to keep separated from dvcs repos.
@@ -68,7 +76,6 @@ restore_pmr2_backup () {
 	su ${ZOPE_USER} -c \
 	    "bin/repozo -R -r \"${PMR_ZEO_BACKUP}\" -o var/filestorage/Data.fs"
 	EOF
-    ssh-agent -k
 
     POSTINSTALL_REINDEX="server/postinstall_reindex.sh"
 
