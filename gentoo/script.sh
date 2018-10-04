@@ -10,32 +10,32 @@ DIR=$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )
 # TODO should also apply optional step to attach a separate disk image
 
 # BACKUP_* flags are origin restoration endpoints
-export BACKUP_HOST=dist.physiomeproject.org
-export BACKUP_USER=pmrdemo
+export BACKUP_HOST=${BACKUP_HOST:-"dist.physiomeproject.org"}
+export BACKUP_USER=${BACKUP_USER:-"pmrdemo"}
 
-export DIST_SERVER=https://"${BACKUP_HOST}"
-export JARS_SERVER="${DIST_SERVER}"/jars
-export NEO4J_VERSION=neo4j-community-3.0.1
-export TOMCAT_VERSION=8.5
+export DIST_SERVER=${DIST_SERVER:-"https://${BACKUP_HOST}"}
+export JARS_SERVER=${JARS_SERVER:-"${DIST_SERVER}/jars"}
+export NEO4J_VERSION=${NEO4J_VERSION-"neo4j-community-3.0.1"}
+export TOMCAT_VERSION=${TOMCAT_VERSION:-"8.5"}
 
 # TODO figure out usage of TOMCAT_SUFFIX and whether it is applicable
 # without complicating things.
-export TOMCAT_USER=tomcat
+export TOMCAT_USER=${TOMCAT_USER:-"tomcat"}
+export ZOPE_USER=${ZOPE_USER:-"zope"}
+export MORRE_USER=${MORRE_USER:-"${ZOPE_USER}"}
+export PMR_HOME=${PMR_HOME:-"/home/${ZOPE_USER}"}
+export MORRE_HOME=${MORRE_HOME:-"/home/${MORRE_USER}"}
+export BUILDOUT_NAME=${BUILDOUT_NAME:-"pmr2.buildout"}
 
-export ZOPE_USER=zope
-export MORRE_USER="${ZOPE_USER}"
-export PMR_HOME=/home/"${ZOPE_USER}"
-export MORRE_HOME=/home/"${MORRE_USER}"
-export BUILDOUT_NAME="pmr2.buildout"
+export SITE_ROOT=${SITE_ROOT:-"pmr"}
+export HOST_FQDN=${HOST_FQDN:-"pmr.example.com"}
 
-export SITE_ROOT=pmr
-export HOST_FQDN="pmr.example.com"
+export PMR_DATA_READ_KEY=${PMR_DATA_READ_KEY:-"${DIR}/pmrdemo_key"}
+export PMR_DATA_ROOT=${PMR_DATA_ROOT:-"${PMR_HOME}/pmr2"}
+export PMR_ZEO_BACKUP=${PMR_ZEO_BACKUP:-"${PMR_HOME}/backup"}
 
-export PMR_DATA_READ_KEY="${DIR}/pmrdemo_key"
-export PMR_DATA_ROOT="${PMR_HOME}/pmr2"
-export PMR_ZEO_BACKUP="${PMR_HOME}/backup"
+export ZOPE_INSTANCE_PORT=${ZOPE_INSTANCE_PORT:-"8280"}
 
-export ZOPE_INSTANCE_PORT=8280
 
 # XXX TODO upstream should implement some shell that sets this up
 alias SSH_CMD="ssh -oStrictHostKeyChecking=no -oBatchMode=Yes -i \"${VBOX_PRIVKEY}\" root@${VBOX_IP}"

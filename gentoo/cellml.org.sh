@@ -3,22 +3,20 @@
 # VirtualBox control environment.
 
 set -e
-# XXX these MUST be read from some configuration file
 
-# BACKUP_* flags are origin restoration endpoints
-# export BACKUP_HOST=
-# export BACKUP_USER=
-# export BACKUP_ZEO_PATH=
+export BACKUP_HOST=${BACKUP_HOST:-"dist.physiomeproject.org"}
+export BACKUP_USER=${BACKUP_USER:-"pmrdemo"}
+export DIST_SERVER=${DIST_SERVER:-"https://${BACKUP_HOST}"}
 
-# export DIST_SERVER=https://dist.physiomeproject.org/
+export CELLML_USER=${ZOPE_USER:-"zope"}
+export CELLML_HOME=${CELLML_HOME:-"/home/${CELLML_USER}"}
 
-# XXX CELLML_HOME should be configured
-# export CELLML_HOME=
-# export CELLML_ZEO_KEY=
-# export CELLML_ZEO_BACKUP=
-# export CELLML_USER=
+export HOST_FQDN=${HOST_FQDN:-"cellml.org"}
 
-# export HOST_FQDN="cellml.org"
+export CELLML_DATA_READ_KEY=${CELLML_DATA_READ_KEY:-"${DIR}/cellml_key"}
+export CELLML_ZEO_BACKUP=${PMR_ZEO_BACKUP:-"${CELLML_HOME}/backup"}
+
+# static definitions
 
 export BUILDOUT_NAME="cellml.site"
 export SITE_ROOT="cellml"
@@ -39,12 +37,11 @@ restore_cellml_backup () {
 	ssh-keyscan "${BACKUP_HOST}" >> ~/.ssh/known_hosts 2>/dev/null
 	EOF
 
-    ssh-add "${CELLML_ZEO_KEY}"
+    ssh-add "${CELLML_DATA_READ_KEY}"
     SSH_CMD -A <<- EOF
-	rsync -av ${BACKUP_USER}@${BACKUP_HOST}:"${BACKUP_ZEO_PATH}" \
-	    "${CELLML_ZEO_BACKUP}"
+	rsync -av ${BACKUP_USER}@${BACKUP_HOST}: "${CELLML_ZEO_BACKUP}"
 	EOF
-    ssh-add -d "${CELLML_ZEO_KEY}"
+    ssh-add -d "${CELLML_DATA_READ_KEY}"
 
     SSH_CMD <<- EOF
         /etc/init.d/cellml.instance stop
@@ -102,8 +99,8 @@ fi
 
 # restore backup
 if [ ! -z "${RESTORE_BACKUP}" ]; then
-    if [ -z "${CELLML_ZEO_KEY}" ]; then
-        echo "skipping backup restore; CELLML_ZEO_KEY undefined"
+    if [ -z "${CELLML_DATA_READ_KEY}" ]; then
+        echo "skipping backup restore; CELLML_DATA_READ_KEY undefined"
     else
         restore_cellml_backup
     fi
