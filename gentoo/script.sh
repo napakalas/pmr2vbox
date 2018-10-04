@@ -78,7 +78,7 @@ restore_pmr2_backup () {
 	    "bin/repozo -R -r \"${PMR_ZEO_BACKUP}\" -o var/filestorage/Data.fs"
 	EOF
 
-    POSTINSTALL_REINDEX="server/postinstall_reindex.sh"
+    POSTINSTALL_REINDEX="${DIR}/server/postinstall_reindex.sh"
 
     envsubst \$ZOPE_USER,\$PMR_HOME < "${POSTINSTALL_REINDEX}" | SSH_CMD
 }
@@ -86,10 +86,10 @@ restore_pmr2_backup () {
 
 if [ $# = 0 ]; then
     # enable all local commands/shortcuts
-    INSTALL_PMR2=server/install_pmr2.sh
-    INSTALL_MORRE=server/install_morre.sh
-    INSTALL_BIVES=server/install_bives.sh
-    SETUP_PRODUCTION=server/install_production_services.sh
+    INSTALL_PMR2="${DIR}/server/install_pmr2.sh"
+    INSTALL_MORRE="${DIR}/server/install_morre.sh"
+    INSTALL_BIVES="${DIR}/server/install_bives.sh"
+    SETUP_PRODUCTION="${DIR}/server/install_production_services.sh"
     RESTORE_BACKUP=1
 fi
 
@@ -97,19 +97,19 @@ while [[ $# > 0 ]]; do
     opt="$1"
     case "${opt}" in
         --install-pmr2)
-            INSTALL_PMR2=server/install_pmr2.sh
+            INSTALL_PMR2="${DIR}/server/install_pmr2.sh"
             shift
             ;;
         --install-morre)
-            INSTALL_MORRE=server/install_morre.sh
+            INSTALL_MORRE="${DIR}/server/install_morre.sh"
             shift
             ;;
         --install-bives)
-            INSTALL_BIVES=server/install_bives.sh
+            INSTALL_BIVES="${DIR}/server/install_bives.sh"
             shift
             ;;
         --install-production)
-            SETUP_PRODUCTION=server/install_production_services.sh
+            SETUP_PRODUCTION="${DIR}/server/install_production_services.sh"
             shift
             ;;
         --restore-backup)
