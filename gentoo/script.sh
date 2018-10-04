@@ -36,6 +36,7 @@ export PMR_ZEO_BACKUP=${PMR_ZEO_BACKUP:-"${PMR_HOME}/backup"}
 
 export ZOPE_INSTANCE_PORT=${ZOPE_INSTANCE_PORT:-"8280"}
 
+chmod 600 "${DIR}/pmrdemo_key"
 
 # XXX TODO upstream should implement some shell that sets this up
 alias SSH_CMD="ssh -oStrictHostKeyChecking=no -oBatchMode=Yes -i \"${VBOX_PRIVKEY}\" root@${VBOX_IP}"
@@ -59,7 +60,7 @@ restore_pmr2_backup () {
     SSH_CMD -A <<- EOF
 	rsync -av ${BACKUP_USER}@${BACKUP_HOST}: "${PMR_DATA_ROOT}"
 	EOF
-    ssh-add -d "${PMR_DATA_READ_KEY}"
+    ssh-add -D
 
     # terminate the standalone ssh agent.
     ssh-agent -k
