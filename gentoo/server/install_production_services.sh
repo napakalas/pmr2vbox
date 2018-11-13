@@ -59,6 +59,10 @@ cat << EOF > /etc/apache2/vhosts.d/90_${BUILDOUT_NAME}.conf
     SetOutputFilter DEFLATE
     SetEnvIfNoCase Request_URI "\\.(?:gif|jpe?g|png)$" no-gzip
 
+    # de-chunk the chunked encoding for ZServer (forces Apache to buffer
+    # the entire thing by forcing a Content-Length header).
+    SetEnv proxy-sendcl 1
+
     RewriteEngine On
     RewriteCond %{REQUEST_URI} !^/\\.well\\-known/acme\\-challenge/
     RewriteRule "^/(.*)" "http://127.0.0.1:${ZOPE_INSTANCE_PORT}/VirtualHostBase/http/${HOST_FQDN}:80/${SITE_ROOT}/VirtualHostRoot/\$1" [P]
