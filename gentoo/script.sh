@@ -38,7 +38,10 @@ export ZOPE_INSTANCE_PORT=${ZOPE_INSTANCE_PORT:-"8280"}
 
 chmod 600 "${DIR}/pmrdemo_key"
 
-# XXX TODO upstream should implement some shell that sets this up
+
+# remaining definitions should be static
+
+# alias SSH_CMD="ssh \"${VBOX_SSH_FLAGS[@]}\" root@${VBOX_IP}"
 alias SSH_CMD="ssh -oStrictHostKeyChecking=no -oBatchMode=Yes -i \"${VBOX_PRIVKEY}\" root@${VBOX_IP}"
 
 export BUILDOUT_ROOT="${PMR_HOME}/${BUILDOUT_NAME}"
