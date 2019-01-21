@@ -15,6 +15,92 @@ s3_region () {
     warn "S3_BUCKET '${S3_BUCKET}' is at region '${AWS_DEFAULT_REGION}'"
 }
 
+# 0. register the policy as per <https://docs.aws.amazon.com/vm-import/latest/userguide/vmimport-image-import.html>
+
+# this is NOT a date, it's the version number of the policy document format.
+export AWS_POLICY_VERSION=2012-10-17
+
+trust_policy_tmpl='{
+   "Version": "${AWS_POLICY_VERSION}",
+   "Statement": [
+      {
+         "Effect": "Allow",
+         "Principal": { "Service": "vmie.amazonaws.com" },
+         "Action": "sts:AssumeRole",
+         "Condition": {
+            "StringEquals":{
+               "sts:Externalid": "vmimport"
+            }
+         }
+      }
+   ]
+}
+'
+
+role_policy_tmpl='{
+   "Version":"${AWS_POLICY_VERSION}",
+   "Statement":[
+      {
+         "Effect":"Allow",
+         "Action":[
+            "s3:GetBucketLocation",
+            "s3:ListBucket"
+         ],
+         "Resource":[
+            "arn:aws:s3:::${S3_BUCKET}"
+         ]
+      },
+      {
+         "Effect":"Allow",
+         "Action":[
+            "s3:GetObject"
+         ],
+         "Resource":[
+            "arn:aws:s3:::${S3_BUCKET}/*"
+         ]
+      },
+      {
+         "Effect":"Allow",
+         "Action":[
+            "ec2:ModifySnapshotAttribute",
+            "ec2:CopySnapshot",
+            "ec2:RegisterImage",
+            "ec2:Describe*"
+         ],
+         "Resource":"*"
+      }
+   ]
+}'
+
+register_vmimport_role () {
+    trust_policy_json=$(mktemp)
+    role_policy_json=$(mktemp)
+    echo "${trust_policy_tmpl}" |
+        envsubst \${AWS_POLICY_VERSION},\${S3_BUCKET} > ${trust_policy_json}
+    echo "${role_policy_tmpl}" |
+        envsubst \${AWS_POLICY_VERSION},\${S3_BUCKET} > ${role_policy_json}
+
+    aws iam get-role --role-name vmimport 2>/dev/null ||
+    aws iam create-role \
+        --role-name vmimport \
+        --assume-role-policy-document file://${trust_policy_json} || trust=$?
+
+    aws iam put-role-policy \
+      --role-name vmimport \
+      --policy-name vmimport \
+      --policy-document file://${role_policy_json} || role=$?
+
+    rm ${trust_policy_json} ${role_policy_json}
+
+    if [[ $trust -ne 0 ]] || [[ $role -ne 0 ]]; then
+        warn 'failed to create IAM role named `vmimport`'
+        warn 'please refer to <https://docs.aws.amazon.com/vm-import/latest/userguide/vmimport-image-import.html>'
+        return 1
+    fi
+}
+
+# 1. upload the image to S3.
+
 upload_s3 () {
     src="$1"
     S3_KEY=${S3_KEY:-$(

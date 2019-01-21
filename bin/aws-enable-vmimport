@@ -1,0 +1,21 @@
+#!/bin/bash
+set -e
+
+# include related libraries
+DIR=$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )
+BASENAME=$(basename ${BASH_SOURCE[0]})
+
+source $DIR/../lib/aws
+
+export S3_BUCKET="$1"
+
+if [ -z "${S3_BUCKET}" ]; then
+    warn "usage: ${BASENAME} S3_BUCKET"
+    warn ""
+    warn "attempt to register vmimport policy"
+    exit 2
+fi
+
+s3_region "${S3_BUCKET}"
+register_vmimport_role
+echo OK
