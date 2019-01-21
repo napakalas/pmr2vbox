@@ -10,7 +10,8 @@ warn () {
 # TODO define permission policies
 
 s3_region () {
-    AWS_DEFAULT_REGION=$(aws s3api get-bucket-location --bucket "${S3_BUCKET}")
+    region=$(aws s3api get-bucket-location --bucket "${S3_BUCKET}")
+    export AWS_DEFAULT_REGION=$region
     warn "S3_BUCKET '${S3_BUCKET}' is at region '${AWS_DEFAULT_REGION}'"
 }
 
@@ -24,7 +25,7 @@ upload_s3 () {
     ret=0
     aws s3api head-object \
         --bucket "${S3_BUCKET}" \
-        --key "${S3_KEY}" 2&> /dev/null || ret=$?
+        --key "${S3_KEY}" > /dev/null 2>&1 || ret=$?
     if [ $ret = 0 ]; then
         warn "s3://${S3_BUCKET}/${S3_KEY} already uploaded"
     else

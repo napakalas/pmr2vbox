@@ -7,9 +7,9 @@ BASENAME=$(basename ${BASH_SOURCE[0]})
 
 source $DIR/../lib/aws
 
-UPLOAD_IMG="$1"
-S3_BUCKET="$2"
-S3_KEY="$3"
+export UPLOAD_IMG="$1"
+export S3_BUCKET="$2"
+export S3_KEY="$3"
 
 if [ -z "${UPLOAD_IMG}" ] || [ -z "${S3_BUCKET}" ]; then
     warn "usage: ${BASENAME} UPLOAD_IMG S3_BUCKET [S3_KEY]"
