@@ -1,17 +1,63 @@
-PMR2 VirtualBox Image generator
-===============================
+PMR2 VirtualBox Image generator (OSX, MacOS Mojave 10.14.3)
+===========================================================
 
-Instead of just providing documentation on how to buidl the whole thing,
-it would be useful to also have a working script that will build the
-whole thing.  Following was the original documentation done for Gentoo.
+    Instead of just providing documentation on how to build the whole thing,
+    it would be useful to also have a working script that will build the
+    whole thing.  Following was the original documentation done for Gentoo.
 
-Do note that this relies on
-`vboxtools <https://github.com/metatoaster/vboxtools>`_.  Documentation
-on how these scripts actually work (and how to make them work) to come.
-In brief, follow the instructions on creating a base Gentoo system, and
-then call ``activatevm`` to spawn a new bash session.  Before executing
-``gentoo/script.sh``, ensure that all relevant variables are filled with
-a defined value.
+    Do note that this relies on
+    `vboxtools <https://github.com/metatoaster/vboxtools>`_.  Documentation
+    on how these scripts actually work (and how to make them work) to come.
+    In brief, follow the instructions on creating a base Gentoo system, and
+    then call ``activatevm`` to spawn a new bash session.  Before executing
+    ``gentoo/script.sh``, ensure that all relevant variables are filled with
+    a defined value.
+
+In order to implement the VirtualBox Image in MacOS, there are two conditions 
+to be considered:
+
+- MacOS is built based on Unix which is similar to Linux but they 
+  still have a number of differences
+- Bash version in MacOS is 3.2.x which does not support some commands 
+  in the cloned scripts
+
+Therefore, before continuing to the next process, it is necessary to prepare
+the MacOS environment:
+
+- MacOS usually is not equipped with wget so firstly is installing wget
+
+.. code-block:: console
+
+    $ ruby -e "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/master/install)"
+    $ brew install wget --with-libressl
+
+- Since MacOS is based on Unix,therefore, it's sed command behaves slightly different
+  to Linux. As an alternative, we can install gsed which operates as same as sed in Linux
+
+.. code-block:: console
+
+    $ brew install gnu-sed --with-default-names
+ 
+- The date command in MacOS is also has different behaviour so it is replaced by gdate.
+  gdate is included in coreutils
+  
+.. code-block:: console
+
+    $ brew install coreutils
+    
+- Installing Bash version > 4.0
+
+.. code-block:: console
+
+    $ ruby -e "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/master/install)" < /dev/null 2> /dev/null
+    $ brew install bash
+    
+- Configure the terminal to the new bash
+
+.. code-block:: console
+
+    $ sudo bash -c 'echo /usr/local/bin/bash >> /etc/shells'
+    $ chsh -s /usr/local/bin/bash
 
 Roughly speaking, the whole build process may be achieved by doing:
 
@@ -28,6 +74,49 @@ Roughly speaking, the whole build process may be achieved by doing:
     $ # acquire the right signatures; please verify this against the
     $ # Gentoo installation handbook linked in the documentation on the
     $ # landing page of the vboxtools repository
+
+This point is describing the modification conducted to the original scripts. 
+Otherwise, you may continue to the next command directly.
+
+- File: vboxtools/bin/createvm-gentoo
+
+    - Replace: #!/bin/bash, with: #!/usr/bin/env bash
+      without replacement the script is pointing to the old bash
+
+- File: vboxtools/lib/gentoo
+
+    - Replace: #!/bin/bash, with: #!/usr/bin/env bash
+    - Replace: date=$(date -u +%Y%m%d --date="$day day ago")
+      with: date=$(gdate -u +%Y%m%d --date="$day day ago")
+
+- File: vboxtools/lib/utils
+
+    - Replace all sed command with gsed
+    - Replace the body of set_vm_mac_ip () with:
+      
+      .. code-block:: console
+      
+          name="$1"
+          net="$2"
+          VBOX_MAC=$(
+              VBoxManage showvminfo "${name}" | grep "${net}" | \
+              gsed -r 's/.*MAC: ([0-9A-F]*).*/\1/' | gsed -r 's/(.{2})/:\1/g' | \
+              cut -b 2- | sed 's/0\([0-9A-Za-z]\)/\1/g'
+          )
+          info "mac is $VBOX_MAC"
+          VBOX_IP=$(
+              arp -an | grep -i ${VBOX_MAC} | cut -d'(' -f2 | cut -d')' -f1
+          )
+          if [ -z $VBOX_IP ]; then
+              warn "failed to derive IP"
+              return 1
+          fi
+          info "ip is $VBOX_IP"
+          export VBOX_MAC=$VBOX_MAC
+          export VBOX_IP=$VBOX_IP
+
+.. code-block:: console
+
     $ gpg --keyserver hkp://keys.gnupg.net --recv-keys 0xBB572E0E2D182910
     gpg: requesting key 0xBB572E0E2D182910 from hkp server ...
     ...
