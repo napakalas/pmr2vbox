@@ -37,13 +37,15 @@ the MacOS environment:
 .. code-block:: console
 
     $ brew install gnu-sed --with-default-names
+    $ ln -s /usr/local/bin/gsed /usr/local/bin/sed
  
 - The date command in MacOS is also has different behaviour so it is replaced by gdate.
-  gdate is included in coreutils
+  gdate is included in coreutils. Then, create a date symlink pointing to gdate
   
 .. code-block:: console
 
     $ brew install coreutils
+    $ ln -s /usr/local/bin/gdate /usr/local/bin/date
     
 - Installing Bash version > 4.0
 
@@ -86,12 +88,9 @@ Otherwise, you may continue to the next command directly.
 - File: vboxtools/lib/gentoo
 
     - Replace: #!/bin/bash, with: #!/usr/bin/env bash
-    - Replace: date=$(date -u +%Y%m%d --date="$day day ago")
-      with: date=$(gdate -u +%Y%m%d --date="$day day ago")
 
 - File: vboxtools/lib/utils
 
-    - Replace all sed command with gsed
     - Replace the body of set_vm_mac_ip () with:
       
       .. code-block:: console
@@ -114,6 +113,17 @@ Otherwise, you may continue to the next command directly.
           info "ip is $VBOX_IP"
           export VBOX_MAC=$VBOX_MAC
           export VBOX_IP=$VBOX_IP
+
+- Find below code, then remove the 'export' statement
+
+      .. code-block:: console
+
+          export VBOX_SSH_FLAGS=(
+              -oBatchMode=Yes
+              -oUserKnownHostsFile="${VBOX_KNOWN_HOSTS}"
+              -i "${VBOX_PRIVKEY}"
+          )
+
 
 .. code-block:: console
 
